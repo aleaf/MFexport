@@ -77,6 +77,8 @@ def export_cell_budget(cell_budget_file, grid,
                     data = vflux_array
             else:
                 data = get_bc_flux(cbbobj, unique_records[i], kstpkper=(kstp, kper), idx=idx)
+                if not isinstance(data, np.ndarray):
+                    data = get_bc_flux(cbbobj, unique_records[i], kstpkper=(kstp, kper))
             # for example, 1-layer models don't have vertical fluxes
             if data is None or (len(data) == 0):
                 print(f'{variable}, period {kper}, timestep {kstp} not exported.')
