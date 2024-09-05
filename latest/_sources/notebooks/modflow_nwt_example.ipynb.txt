@@ -5,10 +5,10 @@
    "execution_count": 1,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:05.839643Z",
-     "iopub.status.busy": "2024-03-28T16:14:05.839252Z",
-     "iopub.status.idle": "2024-03-28T16:14:06.912098Z",
-     "shell.execute_reply": "2024-03-28T16:14:06.911659Z"
+     "iopub.execute_input": "2024-09-05T16:08:46.621921Z",
+     "iopub.status.busy": "2024-09-05T16:08:46.621758Z",
+     "iopub.status.idle": "2024-09-05T16:08:47.720487Z",
+     "shell.execute_reply": "2024-09-05T16:08:47.719986Z"
     }
    },
    "outputs": [],
@@ -31,10 +31,10 @@
    "execution_count": 2,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:06.914666Z",
-     "iopub.status.busy": "2024-03-28T16:14:06.914116Z",
-     "iopub.status.idle": "2024-03-28T16:14:07.107322Z",
-     "shell.execute_reply": "2024-03-28T16:14:07.106801Z"
+     "iopub.execute_input": "2024-09-05T16:08:47.723094Z",
+     "iopub.status.busy": "2024-09-05T16:08:47.722592Z",
+     "iopub.status.idle": "2024-09-05T16:08:47.907659Z",
+     "shell.execute_reply": "2024-09-05T16:08:47.907163Z"
     }
    },
    "outputs": [
@@ -78,10 +78,10 @@
    "execution_count": 3,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:07.137273Z",
-     "iopub.status.busy": "2024-03-28T16:14:07.136781Z",
-     "iopub.status.idle": "2024-03-28T16:14:07.147656Z",
-     "shell.execute_reply": "2024-03-28T16:14:07.147183Z"
+     "iopub.execute_input": "2024-09-05T16:08:47.936918Z",
+     "iopub.status.busy": "2024-09-05T16:08:47.936348Z",
+     "iopub.status.idle": "2024-09-05T16:08:47.947729Z",
+     "shell.execute_reply": "2024-09-05T16:08:47.947218Z"
     }
    },
    "outputs": [
@@ -127,10 +127,10 @@
    "execution_count": 4,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:07.149598Z",
-     "iopub.status.busy": "2024-03-28T16:14:07.149221Z",
-     "iopub.status.idle": "2024-03-28T16:14:23.512964Z",
-     "shell.execute_reply": "2024-03-28T16:14:23.512467Z"
+     "iopub.execute_input": "2024-09-05T16:08:47.949807Z",
+     "iopub.status.busy": "2024-09-05T16:08:47.949426Z",
+     "iopub.status.idle": "2024-09-05T16:09:04.424263Z",
+     "shell.execute_reply": "2024-09-05T16:09:04.423713Z"
     }
    },
    "outputs": [],
@@ -151,10 +151,10 @@
    "execution_count": 5,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:23.515291Z",
-     "iopub.status.busy": "2024-03-28T16:14:23.514941Z",
-     "iopub.status.idle": "2024-03-28T16:14:26.411716Z",
-     "shell.execute_reply": "2024-03-28T16:14:26.411159Z"
+     "iopub.execute_input": "2024-09-05T16:09:04.426734Z",
+     "iopub.status.busy": "2024-09-05T16:09:04.426546Z",
+     "iopub.status.idle": "2024-09-05T16:09:07.334326Z",
+     "shell.execute_reply": "2024-09-05T16:09:07.333814Z"
     }
    },
    "outputs": [],
@@ -175,10 +175,10 @@
    "execution_count": 6,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:26.413966Z",
-     "iopub.status.busy": "2024-03-28T16:14:26.413795Z",
-     "iopub.status.idle": "2024-03-28T16:14:26.811485Z",
-     "shell.execute_reply": "2024-03-28T16:14:26.810946Z"
+     "iopub.execute_input": "2024-09-05T16:09:07.336800Z",
+     "iopub.status.busy": "2024-09-05T16:09:07.336444Z",
+     "iopub.status.idle": "2024-09-05T16:09:07.739160Z",
+     "shell.execute_reply": "2024-09-05T16:09:07.738652Z"
     }
    },
    "outputs": [
@@ -473,10 +473,10 @@
    "execution_count": 7,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:26.813667Z",
-     "iopub.status.busy": "2024-03-28T16:14:26.813324Z",
-     "iopub.status.idle": "2024-03-28T16:14:26.839121Z",
-     "shell.execute_reply": "2024-03-28T16:14:26.838663Z"
+     "iopub.execute_input": "2024-09-05T16:09:07.741290Z",
+     "iopub.status.busy": "2024-09-05T16:09:07.741112Z",
+     "iopub.status.idle": "2024-09-05T16:09:07.802897Z",
+     "shell.execute_reply": "2024-09-05T16:09:07.802378Z"
     }
    },
    "outputs": [
@@ -490,25 +490,32 @@
       "stress period 0, timestep 4\n",
       "wrote postproc/rasters/STORAGE_per0_stp4.tif\n",
       "no data found at (4, 0) for b'   CONSTANT HEAD'\n",
-      "CONSTANT HEAD, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/CONSTANT HEAD_per0_stp4.tif\n",
       "no data found at (4, 0) for b'FLOW RIGHT FACE '\n",
-      "FLOW RIGHT FACE, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/FLOW RIGHT FACE_per0_stp4.tif\n",
       "no data found at (4, 0) for b'FLOW FRONT FACE '\n",
-      "FLOW FRONT FACE, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/FLOW FRONT FACE_per0_stp4.tif\n",
       "no data found at (4, 0) for b'FLOW LOWER FACE '\n",
-      "FLOW LOWER FACE, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/FLOW LOWER FACE_per0_stp4.tif\n",
       "no data found at (4, 0) for b'           WELLS'\n",
-      "WELLS, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/WELLS_per0_stp4.tif\n",
       "no data found at (4, 0) for b'        RECHARGE'\n",
-      "RECHARGE, period 0, timestep 4 not exported.\n",
+      "wrote postproc/rasters/RECHARGE_per0_stp4.tif\n",
       "no data found at (4, 0) for b'  STREAM LEAKAGE'\n",
-      "STREAM LEAKAGE, period 0, timestep 4 not exported.\n"
+      "wrote postproc/rasters/STREAM LEAKAGE_per0_stp4.tif\n"
      ]
     },
     {
      "data": {
       "text/plain": [
-       "['postproc/rasters/STORAGE_per0_stp4.tif']"
+       "['postproc/rasters/STORAGE_per0_stp4.tif',\n",
+       " 'postproc/rasters/CONSTANT HEAD_per0_stp4.tif',\n",
+       " 'postproc/rasters/FLOW RIGHT FACE_per0_stp4.tif',\n",
+       " 'postproc/rasters/FLOW FRONT FACE_per0_stp4.tif',\n",
+       " 'postproc/rasters/FLOW LOWER FACE_per0_stp4.tif',\n",
+       " 'postproc/rasters/WELLS_per0_stp4.tif',\n",
+       " 'postproc/rasters/RECHARGE_per0_stp4.tif',\n",
+       " 'postproc/rasters/STREAM LEAKAGE_per0_stp4.tif']"
       ]
      },
      "execution_count": 7,
@@ -536,10 +543,10 @@
    "execution_count": 8,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:26.841206Z",
-     "iopub.status.busy": "2024-03-28T16:14:26.840887Z",
-     "iopub.status.idle": "2024-03-28T16:14:26.880055Z",
-     "shell.execute_reply": "2024-03-28T16:14:26.879556Z"
+     "iopub.execute_input": "2024-09-05T16:09:07.805053Z",
+     "iopub.status.busy": "2024-09-05T16:09:07.804709Z",
+     "iopub.status.idle": "2024-09-05T16:09:07.845807Z",
+     "shell.execute_reply": "2024-09-05T16:09:07.845261Z"
     }
    },
    "outputs": [
@@ -550,22 +557,15 @@
       "Exporting heads...\n",
       "file: data/lpr/lpr_inset.hds\n",
       "stress period 0, timestep 4\n",
-      "wrote postproc/rasters/wt_per0_stp4.tif\n",
-      "writing postproc/shps/wt_ctr_per0_stp4.shp... Done\n"
+      "wrote postproc/rasters/wt_per0_stp4.tif\n"
      ]
     },
     {
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:163: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed two minor releases later.\n",
-      "  for i, c in enumerate(ctr.collections):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n",
-      "  if LooseVersion(fiona.__gdal_version__) < LooseVersion(\"3.0.0\"):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n",
-      "  if LooseVersion(fiona.__gdal_version__) < LooseVersion(\"3.0.0\"):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:129: ShapelyDeprecationWarning: The 'type' attribute is deprecated, and will be removed in the future. You can use the 'geom_type' attribute instead.\n",
-      "  Type = g.type\n"
+      "/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:165: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed in 3.10.\n",
+      "  for i, c in enumerate(ctr.collections):\n"
      ]
     },
     {
@@ -601,10 +601,10 @@
    "execution_count": 9,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:26.882339Z",
-     "iopub.status.busy": "2024-03-28T16:14:26.881992Z",
-     "iopub.status.idle": "2024-03-28T16:14:26.915329Z",
-     "shell.execute_reply": "2024-03-28T16:14:26.914795Z"
+     "iopub.execute_input": "2024-09-05T16:09:07.848222Z",
+     "iopub.status.busy": "2024-09-05T16:09:07.847610Z",
+     "iopub.status.idle": "2024-09-05T16:09:07.882042Z",
+     "shell.execute_reply": "2024-09-05T16:09:07.881482Z"
     }
    },
    "outputs": [
@@ -618,22 +618,15 @@
       "to stress period 8, timestep 4\n",
       "\n",
       "\n",
-      "wrote postproc/rasters/wt-ddn_per8_stp4.tif\n",
-      "writing postproc/shps/wt-ddn_ctr_per8_stp4.shp... Done\n"
+      "wrote postproc/rasters/wt-ddn_per8_stp4.tif\n"
      ]
     },
     {
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:163: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed two minor releases later.\n",
-      "  for i, c in enumerate(ctr.collections):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n",
-      "  if LooseVersion(fiona.__gdal_version__) < LooseVersion(\"3.0.0\"):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n",
-      "  if LooseVersion(fiona.__gdal_version__) < LooseVersion(\"3.0.0\"):\n",
-      "/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:129: ShapelyDeprecationWarning: The 'type' attribute is deprecated, and will be removed in the future. You can use the 'geom_type' attribute instead.\n",
-      "  Type = g.type\n"
+      "/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:165: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed in 3.10.\n",
+      "  for i, c in enumerate(ctr.collections):\n"
      ]
     },
     {
@@ -669,10 +662,10 @@
    "execution_count": 10,
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2024-03-28T16:14:26.917506Z",
-     "iopub.status.busy": "2024-03-28T16:14:26.917334Z",
-     "iopub.status.idle": "2024-03-28T16:14:27.269870Z",
-     "shell.execute_reply": "2024-03-28T16:14:27.269360Z"
+     "iopub.execute_input": "2024-09-05T16:09:07.884080Z",
+     "iopub.status.busy": "2024-09-05T16:09:07.883745Z",
+     "iopub.status.idle": "2024-09-05T16:09:08.226470Z",
+     "shell.execute_reply": "2024-09-05T16:09:08.225956Z"
     }
    },
    "outputs": [],
@@ -713,7 +706,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.12.2"
+   "version": "3.12.5"
   }
  },
  "nbformat": 4,

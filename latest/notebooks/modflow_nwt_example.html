@@ -4,20 +4,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>export a model &mdash; modflow-export 0.3.0.post3+gd16f082 documentation</title>
+  <title>export a model &mdash; modflow-export 0.3.0.post6+g87206f1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
 
   
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/documentation_options.js?v=969b87f3"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/documentation_options.js?v=b6d48573"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
         <script src="../_static/copybutton.js?v=f281be69"></script>
@@ -43,7 +43,7 @@
             modflow-export
           </a>
               <div class="version">
-                0.3.0.post3+gd16f082
+                0.3.0.post6+g87206f1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -511,19 +511,19 @@ binary grid file: None
 stress period 0, timestep 4
 wrote postproc/rasters/STORAGE_per0_stp4.tif
 no data found at (4, 0) for b&#39;   CONSTANT HEAD&#39;
-CONSTANT HEAD, period 0, timestep 4 not exported.
+wrote postproc/rasters/CONSTANT HEAD_per0_stp4.tif
 no data found at (4, 0) for b&#39;FLOW RIGHT FACE &#39;
-FLOW RIGHT FACE, period 0, timestep 4 not exported.
+wrote postproc/rasters/FLOW RIGHT FACE_per0_stp4.tif
 no data found at (4, 0) for b&#39;FLOW FRONT FACE &#39;
-FLOW FRONT FACE, period 0, timestep 4 not exported.
+wrote postproc/rasters/FLOW FRONT FACE_per0_stp4.tif
 no data found at (4, 0) for b&#39;FLOW LOWER FACE &#39;
-FLOW LOWER FACE, period 0, timestep 4 not exported.
+wrote postproc/rasters/FLOW LOWER FACE_per0_stp4.tif
 no data found at (4, 0) for b&#39;           WELLS&#39;
-WELLS, period 0, timestep 4 not exported.
+wrote postproc/rasters/WELLS_per0_stp4.tif
 no data found at (4, 0) for b&#39;        RECHARGE&#39;
-RECHARGE, period 0, timestep 4 not exported.
+wrote postproc/rasters/RECHARGE_per0_stp4.tif
 no data found at (4, 0) for b&#39;  STREAM LEAKAGE&#39;
-STREAM LEAKAGE, period 0, timestep 4 not exported.
+wrote postproc/rasters/STREAM LEAKAGE_per0_stp4.tif
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -532,7 +532,14 @@ STREAM LEAKAGE, period 0, timestep 4 not exported.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[&#39;postproc/rasters/STORAGE_per0_stp4.tif&#39;]
+[&#39;postproc/rasters/STORAGE_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/CONSTANT HEAD_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/FLOW RIGHT FACE_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/FLOW FRONT FACE_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/FLOW LOWER FACE_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/WELLS_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/RECHARGE_per0_stp4.tif&#39;,
+ &#39;postproc/rasters/STREAM LEAKAGE_per0_stp4.tif&#39;]
 </pre></div></div>
 </div>
 </section>
@@ -563,7 +570,6 @@ Exporting heads...
 file: data/lpr/lpr_inset.hds
 stress period 0, timestep 4
 wrote postproc/rasters/wt_per0_stp4.tif
-writing postproc/shps/wt_ctr_per0_stp4.shp... Done
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -571,14 +577,8 @@ writing postproc/shps/wt_ctr_per0_stp4.shp... Done
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:163: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed two minor releases later.
+/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:165: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed in 3.10.
   for i, c in enumerate(ctr.collections):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
-  if LooseVersion(fiona.__gdal_version__) &lt; LooseVersion(&#34;3.0.0&#34;):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
-  if LooseVersion(fiona.__gdal_version__) &lt; LooseVersion(&#34;3.0.0&#34;):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:129: ShapelyDeprecationWarning: The &#39;type&#39; attribute is deprecated, and will be removed in the future. You can use the &#39;geom_type&#39; attribute instead.
-  Type = g.type
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -620,7 +620,6 @@ to stress period 8, timestep 4
 
 
 wrote postproc/rasters/wt-ddn_per8_stp4.tif
-writing postproc/shps/wt-ddn_ctr_per8_stp4.shp... Done
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -628,14 +627,8 @@ writing postproc/shps/wt-ddn_ctr_per8_stp4.shp... Done
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:163: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed two minor releases later.
+/home/runner/work/modflow-export/modflow-export/mfexport/array_export.py:165: MatplotlibDeprecationWarning: The collections attribute was deprecated in Matplotlib 3.8 and will be removed in 3.10.
   for i, c in enumerate(ctr.collections):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
-  if LooseVersion(fiona.__gdal_version__) &lt; LooseVersion(&#34;3.0.0&#34;):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:117: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
-  if LooseVersion(fiona.__gdal_version__) &lt; LooseVersion(&#34;3.0.0&#34;):
-/home/runner/micromamba/envs/mfexport_ci/lib/python3.12/site-packages/gisutils/shapefile.py:129: ShapelyDeprecationWarning: The &#39;type&#39; attribute is deprecated, and will be removed in the future. You can use the &#39;geom_type&#39; attribute instead.
-  Type = g.type
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
