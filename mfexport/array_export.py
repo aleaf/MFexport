@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import rasterio
 from rasterio import Affine
 from shapely.geometry import LineString
@@ -151,6 +152,7 @@ def export_array_contours(filename, a, modelgrid,
     contours = ax.contour(modelgrid.xcellcenters,
                           modelgrid.ycellcenters,
                           a, **kwargs)
+    #plt.savefig('junk.pdf')
     plt.close()
 
     if not isinstance(contours, list):
@@ -162,15 +164,24 @@ def export_array_contours(filename, a, modelgrid,
         levels = ctr.levels
         for i, c in enumerate(ctr.collections):
             paths = c.get_paths()
-            geoms += [LineString(p.vertices) if len(p) > 1 else LineString() for p in paths]
-            level += list(np.ones(len(paths)) * levels[i])
+            for path in paths:
+                # break the paths up into their components
+                # (so that different instances of a contour level 
+                # don't connect across other contour levels)
+                parts = np.split(path.vertices, 
+                                 np.where(path.codes == 1)[0], axis=0)
+                parts = [p for p in parts if len(p) > 0]
+                geoms += [LineString(p) if len(p) > 1 else LineString() for p in parts]
+                level += list(np.ones(len(parts)) * levels[i])
+                #geoms += [LineString(p.vertices) if len(p) > 1 else LineString() for p in paths]
+                #level += list(np.ones(len(paths)) * levels[i])
 
     # convert the dictionary to a recarray
     if len(level) == 0:
         print('No contours! Try adjusting the levels or interval.')
         return
-    df = pd.DataFrame({'level': level, 'geometry': geoms})
-    df2shp(df, filename, crs=crs)
+    gdf = gpd.GeoDataFrame({'level': level, 'geometry': geoms}, crs=crs)
+    gdf.to_file(filename)
     if verbose:
         print("array contour export took {:.2f}s".format(time.time() - t0))
     return
