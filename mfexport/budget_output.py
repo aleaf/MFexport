@@ -4,6 +4,7 @@ from pathlib import Path
 import time
 import numpy as np
 import pandas as pd
+import flopy
 from flopy.discretization import StructuredGrid
 from flopy.utils.sfroutputfile import SfrFile
 import flopy.utils.binaryfile as bf
@@ -159,10 +160,14 @@ def aggregate_mf6_stress_budget(mf6_stress_budget_output,
     t = text[np.argmax([len(agg[t]) for t in text])]
     text.remove(t)
     to_join = agg[t].copy()
-    to_join[t] = to_join['q']  # create column with flux name
-    join_cols = ['kstpkper', 'time', t]
-    if t == 'GWF':
-        join_cols.insert(0, 'node2')
+    join_cols = ['kstpkper', 'time']
+    if t != 'FLOW-JA-FACE':
+        to_join[t] = to_join['q']  # create column with flux name
+        join_cols.append(t)
+        if t == 'GWF':
+            join_cols.insert(0, 'node2')
+    else:
+        join_cols += ['Qin', 'Qout', 'Qnet', 'Qmean']
     df = to_join[join_cols].copy()
     for t in text:
         if t != 'FLOW-JA-FACE':
@@ -195,6 +200,8 @@ def aggregate_mf6_stress_budget(mf6_stress_budget_output,
     # convert GWF node numbers to zero-based
     df['node2'] -= 1
     df.index = range(len(df))
+    # add stress period column
+    df['per'] = [kstpkper[1] for kstpkper in df['kstpkper']]
     print("finished in {:.2f}s\n".format(time.time() - ta))
     return df
 
@@ -456,19 +463,88 @@ def get_mf6_list_names_ncol_skiprows(mf6_list_file):
 def read_maw_output(maw_head_file, maw_budget_file,
                     mf6_package_data=None, mf6_connection_data=None,
                     mf6_period_data=None,
-                    model=None, grid_type='structured'):
-    """MODFLOW 6 MAW Package binary output; return as DataFrame.
-    """
+                    model=None, pname='maw_0', grid_type='structured'):
+    """Read MODFLOW Binary output from the Multi-Aquifer Well (MAW) Package 
+    and return as a DataFrame. MAW Package input can optionally be included alongside the output; 
+    MAW input can be supplied as individual tables or within a Flopy model object. 
+
+    Parameters
+    ----------
+    maw_head_file : str or pathlike
+        Binary head results.
+    maw_budget_file : str or pathlike
+        Binary budget results.
+    mf6_package_data : str or pathlike (external file), Flopy recarray or pandas DataFrame
+        MAW 'packagedata' table. By default None.
+    mf6_connection_data : str or pathlike (external file), Flopy recarray or pandas DataFrame
+        MAW 'connectiondata' table. By default None.
+    mf6_period_data : dict of str or pathlike (external files), or Flopy recarrays or pandas DataFrames; keyed by stress period.
+        MAW 'perioddata' table(s). By default None.
+    model : Flopy model object, optional
+        A Flopy model object can be specified in lieu of the mf6_package_data, mf6_connection_data,
+        and mf6_period_data inputs. By default None.
+    pname : str
+        MAW package name. Needed if there is more than one MAW package associated with model.
+        by default, 'maw_0'
+    grid_type : str; 'structured' or 'unstructured'
+        Type of model grid; affects how the inputs and outputs are aligned.
+        
+    Returns
+    -------
+    df : pandas DataFrame
+        MAW Package outputs and inputs; see the MODFLOW 6 documentation for additional 
+        details on variable names.
+        
+    Column descriptions:
+        =================== ====================================================================
+        kstpkper            MODFLOW timestep, stress period (zero-based)
+        time                Simulation time, in model time units
+        ifno                MAW Package node number (zero-based)
+        icon                Node numbers within each well (zero-based)
+        GWF_cell            MODFLOW groundwater flow cell number (zero-based)
+        k                   MODFLOW groundwater flow cell layer (structured grids; zero-based)
+        i                   MODFLOW groundwater flow cell row (structured grids; zero-based)
+        j                   MODFLOW groundwater flow cell column (structured grids; zero-based)
+        GWF                 Simulated exchange between the MAW node and GWF_cell 
+                            (positive values indicate discharge to well)
+        RATE                Simulated pumping rate from the multi-aquifer well
+        STORAGE             Simulated flow from storage for multi-aquifer well
+        CONSTANT            Simulated flow to maintain constant head in multi-aquifer well
+        head                Simulated head in the multi-aquifer well
+        radius              Input radius for the multi-aquifer well
+        bottom              Input bottom elevation of the multi-aquifer well
+        strt                Input starting head condition for the multi-aquifer well
+        condeqn             Conductance equation for the multi-aquifer well
+        ngwfnodes           Number of nodes in the multi-aquifer well
+        boundname           Boundname identifying the well
+        input_rate          Input pumping rate for the well
+        per                 MODFLOW stress period
+        GWF_net             Sum of GWF terms for all of the nodes in the well. Positive values
+                            indicate net extraction from the well.
+        q_reduce            The difference between the input pumping rate and GWF_net
+        RATE_reduc          The difference between the input and simulated pumping rates
+        =================== ====================================================================
+    """  
     packagedata = None
     connectiondata = None
     if model is not None:
         if model.version != 'mf6':
             raise ValueError(f"read_maw_output: model.version: {model.version}.\n"
                              "This function reads output from the MODFLOW 6 MAW Package.")
-        packagedata = pd.DataFrame(model.maw.packagedata.array.copy())
-        connectiondata = pd.DataFrame(model.maw.connectiondata.array.copy())
+        
+        if isinstance(model.maw, flopy.mf6.modflow.ModflowGwfmaw):
+            maw = model.maw
+            pname = maw.name[0]
+        elif pname.upper() in model.get_package_list():
+            maw = getattr(model, pname)
+        else:
+            raise ValueError(f'read_maw_output: {model.name} has multiple MAW packages; '
+                             f'pname {pname.upper()} not in model package list')
+        
+        packagedata = pd.DataFrame(maw.packagedata.array.copy())
+        connectiondata = pd.DataFrame(maw.connectiondata.array.copy())
         perioddata = []
-        for per, data in model.maw.perioddata.data.items():
+        for per, data in maw.perioddata.data.items():
             if data is not None:
                 data = pd.DataFrame(data)
                 data = data.pivot(index='ifno', columns='mawsetting', values='mawsetting_data')
@@ -482,6 +558,7 @@ def read_maw_output(maw_head_file, maw_budget_file,
             perioddata.append(data)
         perioddata = pd.concat(perioddata, axis=0)
     else:
+        packagedata = None
         if mf6_package_data is not None:
             # read the file
             if isinstance(mf6_package_data, str) or isinstance(mf6_package_data, Path):
@@ -504,6 +581,7 @@ def read_maw_output(maw_head_file, maw_budget_file,
                 # make the dataframe on the .array attribute for flopy objects
                 # or mf6_package_data is assumed to be array-like
                 packagedata = pd.DataFrame(getattr(mf6_package_data, 'array', mf6_package_data))
+        connectiondata = None
         if mf6_connection_data is not None:
             if isinstance(mf6_connection_data, str) or isinstance(mf6_connection_data, Path):
                 names, ncol, skiprows = get_mf6_list_names_ncol_skiprows(mf6_connection_data)
@@ -535,7 +613,7 @@ def read_maw_output(maw_head_file, maw_budget_file,
                 # make the dataframe on the .array attribute for flopy objects
                 # or mf6_package_data is assumed to be array-like
                 connectiondata = pd.DataFrame(getattr(connectiondata, 'array', connectiondata))
-                
+        perioddata = None
         if mf6_period_data is not None:
             if isinstance(mf6_period_data, str) or isinstance(mf6_period_data, Path):
                 mf6_period_data = {0: mf6_period_data}
@@ -560,7 +638,6 @@ def read_maw_output(maw_head_file, maw_budget_file,
                                         values=data.columns[2])
                         data.reset_index(inplace=True)
                         data['ifno'] -= 1
-                        data['rate'] = data['rate'].astype(float)
                         data['per'] = per
                         perioddata.append(data)
 
@@ -652,8 +729,8 @@ def read_maw_output(maw_head_file, maw_budget_file,
     # add rates from perioddata
     if perioddata is not None:
         perioddata.index = list(zip(perioddata['per'], perioddata['ifno']))
-        df['per'] = [kstpkper[1] for kstpkper in df['kstpkper']]
         df.index = list(zip(df['per'], df['ifno']))
+        perioddata['input_rate'] = perioddata['rate'].astype(float)
         cols = [c for c in perioddata if c not in ['ifno', 'per']]
         for c in cols:
             df[c] = perioddata[c]
@@ -672,18 +749,19 @@ def read_maw_output(maw_head_file, maw_budget_file,
     cols = ['kstpkper', 'time', 'ifno', 'icon', 'GWF_cell', 'k', 'i', 'j', 
             'GWF', 'FLOW-AREA', 'RATE', 'STORAGE', 'CONSTANT', 'head', 
             'radius', 'bottom', 'strt', 'condeqn', 'ngwfnodes', 'boundname', 
-            'rate', 'per']
+            'input_rate', 'per']
     df = df[[c for c in cols if c in df.columns]].copy()
     df.sort_values(by=['ifno', 'per'], inplace=True)
-    # fill rates that were repeated to subsequent stress periods
-    df['rate'] = df['rate'].ffill()
-    # net groundwater extraction
-    df.index = pd.MultiIndex.from_frame(df[['ifno', 'kstpkper']])
-    df['GWF_net'] = df.reset_index(drop=True).groupby(['ifno', 'kstpkper']).sum()['GWF']
-    # any pumping reductions
-    # 'rate' is the input pumping rate
-    df['q_reduce'] = df['rate'] + df['GWF_net']
-    df['RATE_reduc'] =  df['rate'] - df['RATE']  
+    # compare input and simulated flow rates
+    if 'input_rate' in df.columns:
+        # fill rates that were repeated to subsequent stress periods
+        df['input_rate'] = df['input_rate'].ffill()
+        # net groundwater extraction
+        df.index = pd.MultiIndex.from_frame(df[['ifno', 'kstpkper']])
+        df['GWF_net'] = df.reset_index(drop=True).groupby(['ifno', 'kstpkper']).sum()['GWF']
+        # any pumping reductions
+        df['q_reduce'] = df['input_rate'] + df['GWF_net']
+        df['RATE_reduc'] =  df['input_rate'] - df['RATE']  
     return df.reset_index(drop=True)
 
 

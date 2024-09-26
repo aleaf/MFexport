@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import pytest
+from flopy.discretization import StructuredGrid
 from flopy.utils import binaryfile as bf
 import numpy as np
 import fiona
@@ -8,8 +9,13 @@ import rasterio
 from shapely.geometry import box
 import pytest
 from mfexport.grid import load_modelgrid
-from mfexport.results import export_cell_budget, export_heads, export_drawdown, export_sfr_results
-
+from mfexport.results import (
+    export_cell_budget, 
+    export_heads, 
+    export_drawdown, 
+    export_maw_results,
+    export_sfr_results
+)
 
 @pytest.fixture(scope='module')
 def lpr_output_path(test_output_folder):
@@ -181,6 +187,54 @@ def test_sfr_results_export(lpr_model, lpr_modelgrid, lpr_output_path):
                                   )
     check_files(outfiles, variables, kstpkper)
 
+
+@pytest.fixture(scope='module')
+def test_modelgrid():
+    modelgrid = StructuredGrid(
+        delc=np.array([40] * 440),
+        delr=np.array([40] * 195),
+        xoff=4.80175000e+05,
+        yoff=4.97727500e+06,
+        crs=26915
+    )
+    return modelgrid
+
+@pytest.mark.parametrize('geom_type', ('point', 'polygon'))
+@pytest.mark.parametrize(('mf6_package_data, mf6_connection_data, mf6_period_data'), 
+                         (pytest.param(None, None, None, marks=pytest.mark.xfail(
+                             reason='location of wells from 3D node numbers in MAW output not supported.')),
+                         ('maw/packagedata.dat', 
+                          'maw/connectiondata.dat', {
+                              0: 'maw/perioddata_000.dat',
+                              1: 'maw/perioddata_001.dat'
+                              })
+                         ))
+def test_export_maw_results(mf6_package_data, mf6_connection_data, mf6_period_data, 
+                            test_modelgrid, geom_type, 
+                            testdatapath, test_output_folder):
+    maw_head_file = testdatapath / 'maw/maw.head.bin'
+    maw_budget_file = testdatapath / 'maw/maw.out.bin'
+    if mf6_package_data is not None:
+        mf6_package_data = testdatapath / mf6_package_data
+    if mf6_connection_data is not None:
+        mf6_connection_data = testdatapath / mf6_connection_data
+    if mf6_period_data is not None:
+        mf6_period_data = {k: testdatapath / v for k, v in mf6_period_data.items()}
+
+    kstpkper = [(0, 0)]
+    variables = ['maw']
+    output_folder = test_output_folder / 'maw'
+    outfiles = export_maw_results(maw_head_file=maw_head_file, 
+                                  maw_budget_file=maw_budget_file,
+                                  mf6_package_data=mf6_package_data, 
+                                  mf6_connection_data=mf6_connection_data,
+                                  mf6_period_data=mf6_period_data,
+                                  modelgrid=test_modelgrid,
+                                  kstpkper=(0, 0), geom_type=geom_type,
+                                  output_path=output_folder
+                                  )
+    check_files(outfiles, variables, kstpkper)
+    
 
 @pytest.mark.parametrize('use_flopy', (False, True))
 def test_mf6sfr_results_export(shellmound_model, shellmound_modelgrid, shellmound_output_path, 

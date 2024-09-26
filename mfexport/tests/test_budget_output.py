@@ -1,9 +1,11 @@
 """Tests for the budget_output.py module
 """
 from pathlib import Path
+from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+import flopy
 from mfexport.budget_output import (
     aggregate_sfr_flow_ja_face,
     aggregate_mf6_stress_budget,
@@ -104,14 +106,13 @@ def model(request):
     class PeriodData:
         def __init__(self):
             self.data = None
-    class Maw:
-        def __init__(self):
-            self.packagedata = PackageData()
-            self.connectiondata = ConnectionData()
-            self.perioddata = PeriodData()
     class Model:
         def __init__(self):
-            self.maw = Maw()
+            self.maw = mock.Mock(spec_set=flopy.mf6.modflow.ModflowGwfmaw)
+            self.maw.packagedata = PackageData()
+            self.maw.connectiondata = ConnectionData()
+            self.maw.perioddata = PeriodData()
+            self.maw.name = ['maw_0']
             self.version = 'mf6'
     if request.param == 'model':
         return Model()

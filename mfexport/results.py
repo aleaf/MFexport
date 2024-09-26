@@ -1,7 +1,12 @@
 import numpy as np
 from flopy.utils import binaryfile as bf
 from mfexport.array_export import export_array, export_array_contours
-from mfexport.budget_output import get_bc_flux, read_sfr_output, get_flowja_face
+from mfexport.budget_output import (
+    get_bc_flux, 
+    read_maw_output,
+    read_sfr_output, 
+    get_flowja_face
+)
 from gisutils import shp2df
 from mfexport.pdf_export import sfr_baseflow_pdf, sfr_qaquifer_pdf
 from mfexport.shapefile_export import export_shapefile
@@ -412,5 +417,131 @@ def export_sfr_results(mf2005_sfr_outputfile=None,
             qaq_outfile = '{}/qaquifer_per{}_stp{}.pdf'.format(pdfs_dir, kper, kstp, suffix)
             sfr_qaquifer_pdf(qaq_outfile, df, pointsize=pointsize, verbose=verbose)
             outfiles += [bf_outfile, qaq_outfile]
+    return outfiles
+
+
+def export_maw_results(maw_head_file, 
+                       maw_budget_file,
+                       mf6_package_data=None, 
+                       mf6_connection_data=None,
+                       mf6_period_data=None,
+                       modelgrid=None, model=None, pname='maw_0',
+                       kstpkper=(0, 0), geom_type='point',
+                       output_path='postproc', suffix=''):
+    """Export MODFLOW Binary output from the Multi-Aquifer Well (MAW) Package 
+    to a shapefile. MAW Package input is exported alongside the output; 
+    MAW input can be supplied as individual tables or within a Flopy model object. 
+
+    Parameters
+    ----------
+    maw_head_file : str or pathlike
+        Binary head results.
+    maw_budget_file : str or pathlike
+        Binary budget results.
+    mf6_connection_data : str or pathlike (external file), Flopy recarray or pandas DataFrame
+        MAW 'connectiondata' table. In lieu of support for export based on the 3D
+        node number supplied in the MAW output, this input table, or input of
+        a Flopy model object is required.
+    mf6_package_data : str or pathlike (external file), Flopy recarray or pandas DataFrame
+        MAW 'packagedata' table. By default None.
+    mf6_period_data : dict of str or pathlike (external files), or Flopy recarrays or pandas DataFrames; keyed by stress period.
+        MAW 'perioddata' table(s). By default None.
+    modelgrid : Flopy modelgrid object
+        The modelgrid contains the geospatial information needed to write the shapefile,
+        including the model cell vertices or cell centers, coordinate offset 
+        (lower left corner of the model), and coordinate reference system (.crs attribute).
+        The modelgrid can be supplied individually or via a Flopy model object.
+        By default None
+    model : Flopy model object, optional
+        A Flopy model object can be specified in lieu of the mf6_package_data, mf6_connection_data,
+        mf6_period_data and modelgrid inputs. By default None.
+    pname : str
+        MAW package name. Needed if there is more than one MAW package associated with model.
+        by default, 'maw_0'
+    kstpkper : tuple or list of tuples, optional
+        Timestep, stress period(s) to export (one file is written for each item). 
+        Must be included in maw_budget_file.
+        By default (0, 0)
+    geom_type : str, optional
+        Option to export the MAW locations as model cell polygons or points.
+        By default 'point'
+    output_path : str, optional
+        Folder for writing the shapefile to; the shapefile will be written
+        within a 'shps' subfolder here. By default 'postproc'.
+    suffix : str, optional
+        Additional string to include at the end of the filename. By default ''.
+
+    Returns
+    -------
+    outfiles : list
+        File(s) that were written.
+        
+    Shapefile attribute descriptions:
+        =================== ====================================================================
+        kstpkper            MODFLOW timestep, stress period (zero-based)
+        time                Simulation time, in model time units
+        ifno                MAW Package node number (zero-based)
+        icon                Node numbers within each well (zero-based)
+        GWF_cell            MODFLOW groundwater flow cell number (zero-based)
+        k                   MODFLOW groundwater flow cell layer (structured grids; zero-based)
+        i                   MODFLOW groundwater flow cell row (structured grids; zero-based)
+        j                   MODFLOW groundwater flow cell column (structured grids; zero-based)
+        GWF                 Simulated exchange between the MAW node and GWF_cell 
+                            (positive values indicate discharge to well)
+        RATE                Simulated pumping rate from the multi-aquifer well
+        STORAGE             Simulated flow from storage for multi-aquifer well
+        CONSTANT            Simulated flow to maintain constant head in multi-aquifer well
+        head                Simulated head in the multi-aquifer well
+        radius              Input radius for the multi-aquifer well
+        bottom              Input bottom elevation of the multi-aquifer well
+        strt                Input starting head condition for the multi-aquifer well
+        condeqn             Conductance equation for the multi-aquifer well
+        ngwfnodes           Number of nodes in the multi-aquifer well
+        boundname           Boundname identifying the well
+        input_rate          Input pumping rate for the well
+        per                 MODFLOW stress period
+        GWF_net             Sum of GWF terms for all of the nodes in the well. Positive values
+                            indicate net extraction from the well.
+        q_reduce            The difference between the input pumping rate and GWF_net
+        RATE_reduc          The difference between the input and simulated pumping rates
+        =================== ====================================================================
+    """    
+
+    pdfs_dir, rasters_dir, shps_dir = make_output_folders(output_path)
+    m = model
+    if not isinstance(kstpkper, list):
+        kstpkper = [kstpkper]
+    print('Exporting MAW results...')
+    for f in [maw_budget_file, maw_head_file]:
+        print(f'file: {f}')
+    if modelgrid is not None:
+        grid_type = modelgrid.grid_type
+    elif model is not None:
+        modelgrid = model.modelgrid
+        grid_type = modelgrid.grid_type
+        
+    df = read_maw_output(maw_head_file=maw_head_file, 
+                         maw_budget_file=maw_budget_file,
+                         mf6_package_data=mf6_package_data, 
+                         mf6_connection_data=mf6_connection_data,
+                         mf6_period_data=mf6_period_data,
+                         model=model, pname=pname, grid_type='structured')
+    
+    # if there isn't k, i, j information, use the cellid to locate the wells
+    kwargs = {}
+    if not {'k', 'i', 'j'}.intersection(df.columns):
+        kwargs['cellid_col'] = 'GWF_cell'
+    outfiles = []
+    groups = df.groupby('kstpkper')
+    for kstp, kper in kstpkper:
+        print('stress period {}, timestep {}'.format(kper, kstp))
+        dfp = groups.get_group((kstp, kper)).copy()
+        dfp['stp'] = [t[0] for t in dfp['kstpkper']]
+        dfp['per'] = [t[1] for t in dfp['kstpkper']]
+        dfp.drop('kstpkper', axis=1, inplace=True)  # geopandas doesn't like tuples
+        outfile = shps_dir / f'{pname}-out_per{kper}_stp{kstp}{suffix}.shp'
+        export_shapefile(outfile, dfp, modelgrid=modelgrid, geom_type=geom_type,
+                         **kwargs)
+        outfiles.append(outfile)
     return outfiles
 
