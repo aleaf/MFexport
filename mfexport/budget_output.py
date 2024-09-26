@@ -16,7 +16,7 @@ def aggregate_sfr_flow_ja_face(df):
     as FLOW-JA-FACE, where all inflows (positive values) and outflows
     (negative values) are listed for each stream reach (node). This
     method aggregates those results and returns a dataframe
-    with one row per reach, with Qin, Qout, Qnet and Qmean_cfd
+    with one row per reach per time, with Qin, Qout, Qnet and Qmean_cfd
     and Qmean_cfs columns.
 
     Parameters
@@ -50,10 +50,10 @@ def aggregate_sfr_flow_ja_face(df):
     Qin = {}
     Qout = {}
     timedict = {}
-    node = df.node.tolist()
-    kstpkper = df.kstpkper.tolist()
-    times = df.time.tolist()
-    q = df.q.tolist()
+    node = df['node'].tolist()
+    kstpkper = df['kstpkper'].tolist()
+    times = df['time'].tolist()
+    q = df['q'].tolist()
 
     tal = time.time()
     for i in range(len(node)):
@@ -70,7 +70,7 @@ def aggregate_sfr_flow_ja_face(df):
         Qin[k] = qin
         Qout[k] = qout
         timedict[k] = times[i]
-    print("loop took {:.2f}s".format(time.time() - tal))
+    print("loop took {:.6f}s".format(time.time() - tal))
 
     tal = time.time()
     # casting dicts to list first and then constructing dataframe
@@ -86,9 +86,9 @@ def aggregate_sfr_flow_ja_face(df):
     agg = agg[['time', 'kstpkper', 'rno', 'Qin', 'Qout']]
     agg['Qnet'] = agg[['Qin', 'Qout']].sum(axis=1)
     agg['Qmean'] = agg[['Qin', 'Qout']].abs().sum(axis=1) / 2
-    print("DataFrame construction took {:.2f}s".format(time.time() - tal))
+    print("DataFrame construction took {:.6f}s".format(time.time() - tal))
 
-    print("finished in {:.2f}s\n".format(time.time() - ta))
+    print("finished in {:.6f}s\n".format(time.time() - ta))
     return agg.sort_values(by=['time', 'rno'])
 
 
@@ -114,12 +114,9 @@ def aggregate_mf6_stress_budget(mf6_stress_budget_output,
         Columns derived from FLOW-JA-FACE results are:
         kstpkper : (timestep, stress period) tuples
         time : total time in model units
-        node : SFR reach number (zero-based)
-        Qin : total inflows from other reaches
-        Qout : total outflows to other reaches
-        Qnet : net gain/loss in flow
-        Qmean : average of inflows and outflows
-        Any additional fluxes are listed in columns of the same name.
+        node : Package node number (zero-based)
+        node2 : Zero-based node number of connected groundwater flow cell
+        Other package-specific columns...
     """
     print('Getting data from {}...'.format(mf6_stress_budget_output))
     ta = time.time()
@@ -136,23 +133,52 @@ def aggregate_mf6_stress_budget(mf6_stress_budget_output,
         # aggregate FLOW-JA-FACE values to one Qin, Qout value per reach
         if k == 'FLOW-JA-FACE':
             agg[k] = aggregate_sfr_flow_ja_face(dfs['FLOW-JA-FACE'])
-            index = pd.MultiIndex.from_tuples(list(zip(agg[k].kstpkper,
-                                                       agg[k].rno)),
+            index = pd.MultiIndex.from_tuples(list(zip(agg[k]['kstpkper'],
+                                                       agg[k]['rno'])),
                                               names=['kstpkper', 'node'])
             agg[k].index = index
         else:
             # get fluxes by reach
             # dfs[k] has one row for each connection
             # reduce to sum of flow terms for each node (i.e. each SFR reach)
-            agg[k] = dfs[k].groupby(['kstpkper', 'node']).sum()
+            agg[k] = dfs[k].copy() #.groupby(['kstpkper', 'node']).sum()
+            index = pd.MultiIndex.from_tuples(list(zip(agg[k]['kstpkper'],
+                                                       agg[k]['node'])),
+                                              names=['kstpkper', 'node'])
+            agg[k].index = index
 
     # merge variables into single dataframe
-    t = 'FLOW-JA-FACE' if 'FLOW-JA-FACE' in text else text[0]
+    #t = 'FLOW-JA-FACE' if 'FLOW-JA-FACE' in text else text[0]
+    #
+    # select the flux with the most entries as the index for the aggregated dataframe
+    # (most fluxes have an entry for each package node, but FLOW-JA-FACE in the 
+    # SFR Package, for example will not contain entries for isolated reaches with no
+    # up or downstream connections. If we select a flux with an incomplete index,
+    # then kstpkper and time for the missing items will be NaN across the whole
+    # aggregated dataframe)
+    t = text[np.argmax([len(agg[t]) for t in text])]
     text.remove(t)
-    df = agg[t]
+    to_join = agg[t].copy()
+    to_join[t] = to_join['q']  # create column with flux name
+    join_cols = ['kstpkper', 'time', t]
+    if t == 'GWF':
+        join_cols.insert(0, 'node2')
+    df = to_join[join_cols].copy()
     for t in text:
-        agg[t][t] = agg[t].q  # create column with flux name
-        df = df.join(agg[t][t], how='outer') # join on multiindex of kstpkper, node
+        if t != 'FLOW-JA-FACE':
+            join_cols = [t]
+            # only add node2 if it represents connected gwf cells
+            if t == 'GWF':
+                join_cols += ['node2']
+            to_join = agg[t].copy()
+            to_join[t] = to_join['q']  # create column with flux name
+            to_join = to_join[join_cols]
+        else:
+            to_join = agg[t].copy()[['Qin', 'Qout', 'Qnet', 'Qmean']]
+        df = df.join(to_join, how='outer') # join on multiindex of kstpkper, node
+        
+    # fill missing GWF connections with 0 (-1 in zero-based)
+    df['node2'] = df['node2'].fillna(0).astype(int)
 
     # with outer join, ensure that all kstpkper and rno
     # columns fully populated
@@ -161,20 +187,13 @@ def aggregate_mf6_stress_budget(mf6_stress_budget_output,
     df.reset_index(inplace=True, drop=True)
     df.sort_values(by=['time', 'node'], inplace=True)
     assert not np.any(df.kstpkper.isna().values)
-    #assert not np.any(df.rno.isna().values)  # nan rnos can be unconnected reaches
-    
-    rno_col = {'rno', 'ifno'}.intersection(df.columns)
-    if rno_col:
-        rno_col = rno_col.pop()
-        #assert np.array_equal(df.node.values, df.rno.values)
-        assert np.array_equal(df.dropna(axis=0, subset=['rno'])['node'].values,
-                              df.dropna(axis=0, subset=['rno'])[rno_col].values)
 
-        df.drop(rno_col, axis=1, inplace=True)
     # convert to zero-based
-    # (rnos in flopy package input are zero-based)
+    # (package node numbers in flopy are zero-based)
     if df['node'].min() == 1:
         df['node'] -= 1
+    # convert GWF node numbers to zero-based
+    df['node2'] -= 1
     df.index = range(len(df))
     print("finished in {:.2f}s\n".format(time.time() - ta))
     return df
@@ -414,6 +433,260 @@ def read_mf6_stress_budget_output(mf6_stress_budget_output,
     return df.sort_values(by=['time', 'node'])
 
 
+def get_mf6_list_names_ncol_skiprows(mf6_list_file):
+    names = None
+    skiprows = 0
+    with open(mf6_list_file) as src:
+        for line in src:
+            if line.strip().startswith('#'):
+                names = line.strip().split()
+                skiprows += 1
+            else:
+                ncol = len(line.strip().split())
+                break
+    replacements = {
+        '#wellno': '#ifno'
+    }
+    if names is not None:
+        for k, v in replacements.items():
+            names = [v if n==k else n for n in names]
+    return names, ncol, skiprows
+
+
+def read_maw_output(maw_head_file, maw_budget_file,
+                    mf6_package_data=None, mf6_connection_data=None,
+                    mf6_period_data=None,
+                    model=None, grid_type='structured'):
+    """MODFLOW 6 MAW Package binary output; return as DataFrame.
+    """
+    packagedata = None
+    connectiondata = None
+    if model is not None:
+        if model.version != 'mf6':
+            raise ValueError(f"read_maw_output: model.version: {model.version}.\n"
+                             "This function reads output from the MODFLOW 6 MAW Package.")
+        packagedata = pd.DataFrame(model.maw.packagedata.array.copy())
+        connectiondata = pd.DataFrame(model.maw.connectiondata.array.copy())
+        perioddata = []
+        for per, data in model.maw.perioddata.data.items():
+            if data is not None:
+                data = pd.DataFrame(data)
+                data = data.pivot(index='ifno', columns='mawsetting', values='mawsetting_data')
+                data['per'] = per
+                data.reset_index(inplace=True)
+            else:
+                # repeat the previous period if there is no input for this one
+                # (since these are the rates that are being applied)
+                data = perioddata[-1].copy()
+                data['per'] = per
+            perioddata.append(data)
+        perioddata = pd.concat(perioddata, axis=0)
+    else:
+        if mf6_package_data is not None:
+            # read the file
+            if isinstance(mf6_package_data, str) or isinstance(mf6_package_data, Path):
+                names, ncol, skiprows = get_mf6_list_names_ncol_skiprows(mf6_package_data)
+                if names is None:
+                    names = ['ifno', 'radius', 'bottom', 'strt', 'condeqn', 'ngwfnode', 'boundname']
+                    for i, _ in enumerate(range(len(names), ncol)):
+                        names.append(f'aux_col{i+1}')
+                else:
+                    names[0] = names[0].strip('#')
+                # read the packagedata as a string to handle "none" values
+                with open(mf6_package_data) as src:
+                    raw_pd = src.read()
+                    raw_pd = raw_pd.lower().replace('none', '0 0 0')
+                packagedata = pd.read_csv(io.StringIO(raw_pd), names=names, 
+                                        skiprows=skiprows, sep='\\s+')
+                packagedata['ifno'] -= 1
+            # assume the input is a Flopy recarray or pandas DataFrame
+            else:
+                # make the dataframe on the .array attribute for flopy objects
+                # or mf6_package_data is assumed to be array-like
+                packagedata = pd.DataFrame(getattr(mf6_package_data, 'array', mf6_package_data))
+        if mf6_connection_data is not None:
+            if isinstance(mf6_connection_data, str) or isinstance(mf6_connection_data, Path):
+                names, ncol, skiprows = get_mf6_list_names_ncol_skiprows(mf6_connection_data)
+                if names is None:
+                    names = ['ifno', 'icon', 'k', 'i', 'j', 'scrn_top', 'scrn_botm', 'hk_skin', 'radius_skin']
+                    if grid_type != 'structured':
+                        names = names[:2] + ['cellid'] + names[2:]
+                    for i, _ in enumerate(range(len(names), ncol)):
+                        names.append(f'aux_col{i+1}')
+                else:
+                    names[0] = names[0].strip('#')
+                
+                # read the packagedata as a string to handle "none" values
+                with open(mf6_connection_data) as src:
+                    raw_pd = src.read()
+                    raw_pd = raw_pd.lower().replace('none', '0 0 0')
+                connectiondata = pd.read_csv(io.StringIO(raw_pd), names=names, 
+                                        skiprows=skiprows, sep='\\s+')
+                for col in ['ifno', 'icon', 'k', 'i', 'j']:
+                    if col in connectiondata:
+                        connectiondata[col] -= 1
+                if 'cellid' in connectiondata.columns:
+                    if not np.issubdtype(connectiondata['cellid'].dtype, np.integer):
+                        connectiondata['cellid'] = [(c[0]-1, c[1] -1, c[2] -1) 
+                                                    for c in connectiondata['cellid']]
+                    else:
+                        connectiondata['cellid'] -=1
+            else:
+                # make the dataframe on the .array attribute for flopy objects
+                # or mf6_package_data is assumed to be array-like
+                connectiondata = pd.DataFrame(getattr(connectiondata, 'array', connectiondata))
+                
+        if mf6_period_data is not None:
+            if isinstance(mf6_period_data, str) or isinstance(mf6_period_data, Path):
+                mf6_period_data = {0: mf6_period_data}
+            if isinstance(mf6_period_data, dict):
+                perioddata = []
+                for per, f in mf6_period_data.items():
+                    if isinstance(f, str) or isinstance(f, Path):
+                        names, ncol, skiprows = get_mf6_list_names_ncol_skiprows(f)
+                        if names is None:
+                            names = ['ifno', 'mawsetting', 'rate']
+                            if grid_type != 'structured':
+                                names = names[:2] + ['cellid'] + names[2:]
+                            for i, _ in enumerate(range(len(names), ncol)):
+                                names.append(f'aux_col{i+1}')
+                        else:
+                            names[0] = names[0].strip('#')
+                        
+                        data = pd.read_csv(f, names=names, 
+                                           skiprows=skiprows, sep='\\s+')
+                        data = data.loc[data['mawsetting'] != 'status']
+                        data = data.pivot(index=data.columns[0], columns=data.columns[1], 
+                                        values=data.columns[2])
+                        data.reset_index(inplace=True)
+                        data['ifno'] -= 1
+                        data['rate'] = data['rate'].astype(float)
+                        data['per'] = per
+                        perioddata.append(data)
+
+                    else:
+                        # supplied dataframe, or make the dataframe from a flopy recarray
+                        perioddata = pd.DataFrame(perioddata)
+                perioddata = pd.concat(perioddata, axis=0)
+
+    # get the budget output
+    df = aggregate_mf6_stress_budget(maw_budget_file)
+
+    # get the stage data
+    if maw_head_file is not None:
+        hd = read_mf6_dependent_variable_output(maw_head_file,
+                                                    text='head')
+        df.sort_values(by=['kstpkper', 'node'], inplace=True)
+        hd.sort_values(by=['kstpkper', 'node'], inplace=True)
+        df.set_index(['kstpkper', 'node'], inplace=True)
+        hd.set_index(['kstpkper', 'node'], inplace=True)
+        na_reaches = np.isnan(df.time.values)
+        #df.loc[~na_reaches].to_csv('df.csv')
+        #stg.loc[~na_reaches].to_csv('stg.csv')
+        #assert np.allclose(df.time.values, stg.time.values)
+        
+        # Check that the times are the same
+        # To do this, we have to reindex/broadcast the MAW head results,
+        # which are by well, to the flow results, which are by node
+        # (many nodes per well)
+        assert np.allclose(df.loc[~na_reaches].time.values,
+                hd.reindex(df.index).loc[~na_reaches].time.values)
+        df['head'] = hd['head']
+        # dry wells (where the screen bottom is above the water table)
+        # will have NaN head results
+        #assert not df['head'].isna().any()
+        df.reset_index(inplace=True)
+    else:
+        df['head'] = np.nan
+
+    # get the row, column location of MAW cells;
+    if connectiondata is not None:
+        cd = connectiondata
+        assert cd['ifno'].min() == 0
+        assert cd['icon'].min() == 0
+        assert df['node'].min() == 0
+            
+        #strtop_col = {'rtp', 'strtop'}.intersection(rd.columns).pop()
+        #rno_strtop = dict(zip(rd[rno_col], rd[strtop_col]))
+        #df['strtop'] = pd.to_numeric([rno_strtop[rno] for rno in df.node.values], errors='coerce')
+        # fill nan stages with their streambed tops
+        #isna = df['stage'].isna()
+        #df.loc[isna, 'stage'] = df.loc[isna, 'strtop']
+        #df['depth'] = df['stage'] - df['strtop']
+        #    
+        #if 'cellid' not in rd.columns:
+        #    rd['cellid'] = list(zip(rd['k'], rd['i'], rd['j']))
+            
+        # assume that the order of connections (icon numbers)
+        # is the same in the results as in the connectiondata
+        ntimes = len(np.unique(df['kstpkper']))
+        wellno_from_cd = cd['ifno'].tolist() * ntimes
+        assert np.array_equal(df['node'].values, wellno_from_cd)
+        df['icon'] = cd['icon'].tolist() * ntimes
+        if 'cellid' in cd.columns:
+            cellid_from_cd = cd['cellid'].tolist() * ntimes
+        elif not {'k', 'i', 'j'}.difference(cd.columns):
+            cellid_from_cd = cd[['k', 'i', 'j']].to_records(index=False).tolist() * ntimes
+        
+        # add locations of GWF cells
+        if grid_type == 'structured':
+            for i, dim in enumerate(['k', 'i', 'j']):
+                # handle 'NONE' values in older versions of MODFLOW 6
+                df[dim] = pd.to_numeric([cellid[i] for cellid in cellid_from_cd], errors='coerce')
+            df.dropna(subset=['k', 'i', 'j'], axis=0, inplace=True)
+            # can't convert to integers if nans are present
+            for dim in ['k', 'i', 'j']:
+                df[dim] = df[dim].astype(int)
+                assert 'int' in df[dim].dtype.name
+        else:
+            df['GWF_cell'] = cellid_from_cd
+            
+    # add info from packagedata
+    if packagedata is not None:
+        df.index = df['node']
+        packagedata.index = packagedata['ifno']
+        df = df.join(packagedata, how='outer')
+        assert all(df['node'] == df['ifno'])
+        assert not any(df['ifno'].isna())
+    
+    # add rates from perioddata
+    if perioddata is not None:
+        perioddata.index = list(zip(perioddata['per'], perioddata['ifno']))
+        df['per'] = [kstpkper[1] for kstpkper in df['kstpkper']]
+        df.index = list(zip(df['per'], df['ifno']))
+        cols = [c for c in perioddata if c not in ['ifno', 'per']]
+        for c in cols:
+            df[c] = perioddata[c]
+        
+    # clean up columns
+    renames = {'node2': 'GWF_cell',
+               'node': 'ifno'}
+    for k, v in renames.items():
+        if v in df.columns and k in df.columns:
+            # check again that they match
+            assert np.array_equal(df[k], df[v])
+        elif k in df.columns:
+            df[v] = df[k]
+        df.drop(k, axis=1, inplace=True, errors='ignore')
+    
+    cols = ['kstpkper', 'time', 'ifno', 'icon', 'GWF_cell', 'k', 'i', 'j', 
+            'GWF', 'FLOW-AREA', 'RATE', 'STORAGE', 'CONSTANT', 'head', 
+            'radius', 'bottom', 'strt', 'condeqn', 'ngwfnodes', 'boundname', 
+            'rate', 'per']
+    df = df[[c for c in cols if c in df.columns]].copy()
+    df.sort_values(by=['ifno', 'per'], inplace=True)
+    # fill rates that were repeated to subsequent stress periods
+    df['rate'] = df['rate'].ffill()
+    # net groundwater extraction
+    df.index = pd.MultiIndex.from_frame(df[['ifno', 'kstpkper']])
+    df['GWF_net'] = df.reset_index(drop=True).groupby(['ifno', 'kstpkper']).sum()['GWF']
+    # any pumping reductions
+    # 'rate' is the input pumping rate
+    df['q_reduce'] = df['rate'] + df['GWF_net']
+    df['RATE_reduc'] =  df['rate'] - df['RATE']  
+    return df.reset_index(drop=True)
+
+
 def read_sfr_output(mf2005_sfr_outputfile=None,
                     mf2005_SfrFile_instance=None,
                     mf6_sfr_stage_file=None,
@@ -460,7 +733,7 @@ def read_sfr_output(mf2005_sfr_outputfile=None,
                 raw_pd = src.read()
                 raw_pd = raw_pd.lower().replace('none', '0 0 0')
             packagedata = pd.read_csv(io.StringIO(raw_pd), names=names, 
-                                      skiprows=skiprows, delim_whitespace=True)
+                                      skiprows=skiprows, sep='\\s+')
             for col in ['rno', 'ifno', 'k', 'i', 'j']:
                 if col in packagedata:
                     packagedata[col] -= 1
