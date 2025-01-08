@@ -31,7 +31,7 @@ def test_output_folder(project_root_path):
 @pytest.fixture(scope="session")
 def testdatapath():
     """Smaller datasets for faster test execution."""
-    return 'mfexport/tests/data'
+    return Path('mfexport/tests/data')
 
 
 @pytest.fixture(scope='module')
