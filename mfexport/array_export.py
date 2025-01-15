@@ -162,14 +162,16 @@ def export_array_contours(filename, a, modelgrid,
     level = []
     for ctr in contours:
         levels = ctr.levels
-        for i, c in enumerate(ctr.collections):
-            paths = c.get_paths()
-            for path in paths:
-                # break the paths up into their components
-                # (so that different instances of a contour level 
-                # don't connect across other contour levels)
+        #for i, c in enumerate(ctr.collections):
+        #    paths = c.get_paths()
+        paths = ctr.get_paths()
+        for i, path in enumerate(paths):
+            # break the paths up into their components
+            # (so that different instances of a contour level 
+            # don't connect across other contour levels)
+            if len(path) > 0:
                 parts = np.split(path.vertices, 
-                                 np.where(path.codes == 1)[0], axis=0)
+                                np.where(path.codes == 1)[0], axis=0)
                 parts = [p for p in parts if len(p) > 0]
                 geoms += [LineString(p) if len(p) > 1 else LineString() for p in parts]
                 level += list(np.ones(len(parts)) * levels[i])
